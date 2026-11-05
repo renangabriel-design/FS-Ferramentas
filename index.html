@@ -1,1 +1,146 @@
 
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FS Ferramentas - Conversor</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #38ef7d;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .card {
+            background-color: #1e1e1e;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 4px solid #11998e;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .card-desc {
+            font-size: 11px;
+            color: #888;
+            margin: 6px 0 12px 0;
+        }
+        .btn-primary {
+            background-color: #11998e;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-secondary {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .log-title {
+            color: #ccc;
+            font-size: 12px;
+            margin-top: 16px;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .log-box {
+            background-color: #0a0a0a;
+            border-radius: 6px;
+            padding: 10px;
+            height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            color: #00ff66;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FS FERRAMENTAS</h1>
+        <div class="subtitle">Conversor & Utility Kit para FS20</div>
+        
+        <div class="card">
+            <div class="card-title">Conversor de Texturas</div>
+            <div class="card-desc">Selecione arquivos .DDS (FS19) do seu celular para converter</div>
+            
+            <!-- Input escondido para abrir o gestor de ficheiros do telemóvel -->
+            <input type="file" id="fileInput" accept=".dds" style="display: none;" onchange="processarFicheiro(event)">
+            
+            <button class="btn-primary" onclick="abrirSeletor()">Selecionar Ficheiro DDS</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Otimizador de XML & i3d</div>
+            <div class="card-desc">Ajuste linhas de comandos e parâmetros do mod</div>
+            <button class="btn-secondary" onclick="verXML()">Ver Parâmetros XML</button>
+        </div>
+
+        <div class="log-title">Registo de Atividades:</div>
+        <div class="log-box" id="logBox">
+            [Sistema] FS Ferramentas Web inicializado.<br>
+            [Pronto] Aguardando seleção de mod (FS19 -> FS20)...<br>
+        </div>
+    </div>
+
+    <script>
+        function adicionarLog(mensagem) {
+            const box = document.getElementById('logBox');
+            box.innerHTML += mensagem + "<br>";
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function abrirSeletor() {
+            // Clica programaticamente no seletor de ficheiros do telemóvel
+            document.getElementById('fileInput').click();
+        }
+
+        function processarFicheiro(event) {
+            const ficheiro = event.target.files[0];
+            if (ficheiro) {
+                adicionarLog(`[Sucesso] Ficheiro carregado: <b>${ficheiro.name}</b>`);
+                adicionarLog(`[Info] Tamanho: ${(ficheiro.size / 1024).toFixed(2)} KB`);
+                adicionarLog(`[Processo] Preparando conversão DDS ➔ PNG...`);
+                
+                alert(`Ficheiro "${ficheiro.name}" selecionado com sucesso! Pronto para conversão.`);
+            }
+        }
+
+        function verXML() {
+            alert("Carregando parâmetros de compatibilidade para veículos e equipamentos.");
+            adicionarLog("[Info] Carregando índices de configuração XML...");
+        }
+    </script>
+</body>
+</html>
