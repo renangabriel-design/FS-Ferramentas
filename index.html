@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FS Ferramentas - Conversor DDS Real</title>
+    <title>FS Ferramentas - Web Kit</title>
     <style>
         body {
             background-color: #121212;
@@ -15,7 +15,7 @@
         .container {
             max-width: 500px;
             margin: 0 auto;
-            padding-top: 20px;
+            padding-top: 10px;
         }
         h1 {
             font-size: 24px;
@@ -55,33 +55,24 @@
             width: 100%;
             font-weight: bold;
             cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            box-sizing: border-box;
         }
-        .btn-download {
-            background-color: #38ef7d;
-            color: #000;
+        .btn-secondary {
+            background-color: #333;
+            color: #fff;
             border: none;
             padding: 12px;
             border-radius: 6px;
             width: 100%;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            display: none;
             text-align: center;
             text-decoration: none;
+            display: block;
             box-sizing: border-box;
-        }
-        .preview-box {
-            margin-top: 12px;
-            text-align: center;
-            display: none;
-        }
-        .preview-box img {
-            max-width: 100%;
-            max-height: 250px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background-color: #000;
         }
         .log-title {
             color: #ccc;
@@ -94,7 +85,7 @@
             background-color: #0a0a0a;
             border-radius: 6px;
             padding: 10px;
-            height: 130px;
+            height: 110px;
             overflow-y: auto;
             font-family: monospace;
             font-size: 11px;
@@ -106,175 +97,37 @@
 <body>
     <div class="container">
         <h1>FS FERRAMENTAS</h1>
-        <div class="subtitle">Conversor de Texturas (.DDS ➔ .PNG)</div>
+        <div class="subtitle">Central de Apoio a Mods & Texturas</div>
         
         <div class="card">
-            <div class="card-title">Selecionar Textura .DDS</div>
-            <div class="card-desc">Escolha o ficheiro .dds do mod do FS19 para extrair a textura real</div>
-            
-            <input type="file" id="fileInput" accept=".dds" style="display: none;" onchange="converterDDSReal(event)">
-            
-            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">Selecionar Ficheiro .DDS</button>
-            
-            <div class="preview-box" id="previewContainer">
-                <p style="font-size: 11px; color: #38ef7d; margin-bottom: 6px;">Textura Extraída:</p>
-                <img id="previewImage" src="" alt="Textura PNG">
-            </div>
-
-            <a id="downloadBtn" class="btn-download" download="textura.png">Descarregar PNG Convertido</a>
+            <div class="card-title">Conversor de Texturas (.DDS ➔ .PNG)</div>
+            <div class="card-desc">Conversão rápida e sem falhas de texturas do FS19 para o FS20 diretamente pelo telemóvel</div>
+            <a href="https://imagetostl.com/pt/converter/ficheiro/dds/para/png" target="_blank" class="btn-primary" onclick="registarLog('A abrir conversor de DDS oficial...')">Abrir Conversor DDS / PNG</a>
         </div>
 
-        <div class="log-title">Registo de Processamento:</div>
+        <div class="card">
+            <div class="card-title">Otimizador de Parâmetros XML</div>
+            <div class="card-desc">Consulte orientações para ajuste de linhas de código e compatibilidade de mods</div>
+            <button class="btn-secondary" onclick="verGuiaXML()">Ver Guia de Parâmetros</button>
+        </div>
+
+        <div class="log-title">Registo do Sistema:</div>
         <div class="log-box" id="logBox">
-            [Sistema] Motor de conversão binária pronto.<br>
-            [Pronto] Selecione um ficheiro .dds do telemóvel...<br>
+            [Sistema] FS Ferramentas Web carregado com sucesso.<br>
+            [Pronto] Selecione uma opção acima...<br>
         </div>
     </div>
 
-    <canvas id="canvasProcess" style="display: none;"></canvas>
-
     <script>
-        function log(msg) {
+        function registarLog(msg) {
             const box = document.getElementById('logBox');
             box.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
             box.scrollTop = box.scrollHeight;
         }
 
-        function converterDDSReal(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            log(`A carregar: <b>${file.name}</b> (${(file.size/1024).toFixed(1)} KB)`);
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const buffer = e.target.result;
-                const view = new DataView(buffer);
-
-                // Validar cabeçalho DDS ('DDS ')
-                const magic = view.getUint32(0, true);
-                if (magic !== 0x20534444) {
-                    log(`[Erro] O ficheiro selecionado não é um DDS válido.`);
-                    return;
-                }
-
-                const height = view.getUint32(12, true);
-                const width = view.getUint32(16, true);
-                const pfFlags = view.getUint32(80, true);
-                const fourCC = view.getUint32(84, true);
-
-                log(`Dimensões: <b>${width}x${height}px</b>`);
-
-                const canvas = document.getElementById('canvasProcess');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                const imgData = ctx.createImageData(width, height);
-
-                // Offset onde começam os dados de pixéis após o cabeçalho de 128 bytes
-                let dataOffset = 128;
-
-                // Detetar se usa compressão DXT1/DXT5 ou formato descompactado (RGBA)
-                if (fourCC === 0x31545844) { // DXT1 ('DXT1')
-                    log(`Formato detetado: <b>DXT1 (Comprimido)</b>`);
-                    decomprimirDXT1(view, dataOffset, width, height, imgData.data);
-                } else if (fourCC === 0x35545844) { // DXT5 ('DXT5')
-                    log(`Formato detetado: <b>DXT5 (Comprimido com Alfa)</b>`);
-                    decomprimirDXT5(view, dataOffset, width, height, imgData.data);
-                } else {
-                    log(`Formato detetado: <b>RGBA Direto / Descompactado</b>`);
-                    let offset = dataOffset;
-                    for (let i = 0; i < imgData.data.length; i += 4) {
-                        if (offset + 3 < buffer.byteLength) {
-                            imgData.data[i] = view.getUint8(offset + 2);     R
-                            imgData.data[i+1] = view.getUint8(offset + 1);   G
-                            imgData.data[i+2] = view.getUint8(offset);       B
-                            imgData.data[i+3] = view.getUint8(offset + 3);   A
-                        }
-                        offset += 4;
-                    }
-                }
-
-                ctx.putImageData(imgData, 0, 0);
-                const dataUrl = canvas.toDataURL('image/png');
-
-                document.getElementById('previewImage').src = dataUrl;
-                document.getElementById('previewContainer').style.display = 'block';
-
-                const novoNome = file.name.substring(0, file.name.lastIndexOf('.')) + '.png';
-                const btnDownload = document.getElementById('downloadBtn');
-                btnDownload.href = dataUrl;
-                btnDownload.download = novoNome;
-                btnDownload.style.display = 'block';
-
-                log(`[Sucesso] Textura extraída e convertida para <b>${novoNome}</b>!`);
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Funções auxiliares de descompressão de blocos de textura
-        function unpackRGB565(color, out) {
-            const r = (color >> 11) & 0x1F;
-            const g = (color >> 5) & 0x3F;
-            const b = color & 0x1F;
-            out[0] = (r * 255) / 31;
-            out[1] = (g * 255) / 63;
-            out[2] = (b * 255) / 31;
-        }
-
-        function decomprimirDXT1(view, offset, width, height, data) {
-            let blockWidth = width / 4;
-            let blockHeight = height / 4;
-            let pos = offset;
-
-            for (let by = 0; by < blockHeight; by++) {
-                for (let bx = 0; bx < blockWidth; bx++) {
-                    if (pos + 8 > view.byteLength) break;
-                    const color0 = view.getUint16(pos, true);
-                    const color1 = view.getUint16(pos + 2, true);
-                    const code = view.getUint32(pos + 4, true);
-                    pos += 8;
-
-                    let colors = new Uint8Array(4 * 3);
-                    unpackRGB565(color0, colors.subarray(0, 3));
-                    unpackRGB565(color1, colors.subarray(3, 6));
-
-                    if (color0 > color1) {
-                        colors[6] = (2 * colors[0] + colors[3]) / 3;
-                        colors[7] = (2 * colors[1] + colors[4]) / 3;
-                        colors[8] = (2 * colors[2] + colors[5]) / 3;
-                        colors[9] = (colors[0] + 2 * colors[3]) / 3;
-                        colors[10] = (colors[1] + 2 * colors[4]) / 3;
-                        colors[11] = (colors[2] + 2 * colors[5]) / 3;
-                    } else {
-                        colors[6] = (colors[0] + colors[3]) / 2;
-                        colors[7] = (colors[1] + colors[4]) / 2;
-                        colors[8] = (colors[2] + colors[5]) / 2;
-                        colors[9] = 0; colors[10] = 0; colors[11] = 0;
-                    }
-
-                    for (let py = 0; py < 4; py++) {
-                        for (let px = 0; px < 4; px++) {
-                            let codePixel = (code >> (2 * (4 * py + px))) & 0x3;
-                            let pixelX = bx * 4 + px;
-                            let pixelY = by * 4 + py;
-                            if (pixelX < width && pixelY < height) {
-                                let idx = (pixelY * width + pixelX) * 4;
-                                data[idx] = colors[codePixel * 3];
-                                data[idx+1] = colors[codePixel * 3 + 1];
-                                data[idx+2] = colors[codePixel * 3 + 2];
-                                data[idx+3] = 255;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        function decomprimirDXT5(view, offset, width, height, data) {
-            // Reutiliza a lógica base DXT1 para a cor e aplica o mesmo descodificador
-            decomprimirDXT1(view, offset + 8, width, height, data);
+        function verGuiaXML() {
+            alert("Dica para Modders: Certifique-se de ajustar os caminhos das texturas no ficheiro .xml após converter para .png para evitar erros no jogo.");
+            registarLog("[Info] Guia de parâmetros XML consultado.");
         }
     </script>
 </body>
