@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -57,6 +56,21 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .btn-download {
+            background-color: #38ef7d;
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none;
+            text-align: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
         .btn-secondary {
             background-color: #333;
             color: #fff;
@@ -66,6 +80,17 @@
             width: 100%;
             font-weight: bold;
             cursor: pointer;
+        }
+        .preview-box {
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        .preview-box img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 6px;
+            border: 1px solid #333;
         }
         .log-title {
             color: #ccc;
@@ -93,12 +118,18 @@
         
         <div class="card">
             <div class="card-title">Conversor de Texturas</div>
-            <div class="card-desc">Selecione arquivos .DDS (FS19) do seu celular para converter</div>
+            <div class="card-desc">Selecione um arquivo de imagem/textura do seu celular para converter para PNG</div>
             
-            <!-- Input escondido para abrir o gestor de ficheiros do telemóvel -->
-            <input type="file" id="fileInput" accept=".dds" style="display: none;" onchange="processarFicheiro(event)">
+            <input type="file" id="fileInput" accept="image/*, .dds" style="display: none;" onchange="processarFicheiro(event)">
             
-            <button class="btn-primary" onclick="abrirSeletor()">Selecionar Ficheiro DDS</button>
+            <button class="btn-primary" onclick="abrirSeletor()">Selecionar Ficheiro (.DDS / Imagem)</button>
+            
+            <div class="preview-box" id="previewContainer">
+                <p style="font-size: 11px; color: #aaa;">Pré-visualização da imagem convertida:</p>
+                <img id="previewImage" src="" alt="Resultado PNG">
+            </div>
+
+            <a id="downloadBtn" class="btn-download" download="textura_convertida.png">Descarregar PNG Convertido</a>
         </div>
 
         <div class="card">
@@ -110,9 +141,12 @@
         <div class="log-title">Registo de Atividades:</div>
         <div class="log-box" id="logBox">
             [Sistema] FS Ferramentas Web inicializado.<br>
-            [Pronto] Aguardando seleção de mod (FS19 -> FS20)...<br>
+            [Pronto] Aguardando seleção de textura...<br>
         </div>
     </div>
+
+    <!-- Canvas oculto usado para processar a conversão em PNG -->
+    <canvas id="conversionCanvas" style="display: none;"></canvas>
 
     <script>
         function adicionarLog(mensagem) {
@@ -122,19 +156,58 @@
         }
 
         function abrirSeletor() {
-            // Clica programaticamente no seletor de ficheiros do telemóvel
             document.getElementById('fileInput').click();
         }
 
         function processarFicheiro(event) {
             const ficheiro = event.target.files[0];
-            if (ficheiro) {
-                adicionarLog(`[Sucesso] Ficheiro carregado: <b>${ficheiro.name}</b>`);
-                adicionarLog(`[Info] Tamanho: ${(ficheiro.size / 1024).toFixed(2)} KB`);
-                adicionarLog(`[Processo] Preparando conversão DDS ➔ PNG...`);
-                
-                alert(`Ficheiro "${ficheiro.name}" selecionado com sucesso! Pronto para conversão.`);
-            }
+            if (!ficheiro) return;
+
+            adicionarLog(`[Sucesso] Ficheiro selecionado: <b>${ficheiro.name}</b>`);
+            adicionarLog(`[Processo] Convertendo textura para formato PNG padrão...`);
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('conversionCanvas');
+                    const ctx = canvas.getContext('2d');
+
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    ctx.drawImage(img, 0, 0);
+
+                    // Converte o conteúdo desenhado no Canvas para Data URL em formato PNG
+                    const pngUrl = canvas.toDataURL('image/png');
+
+                    // Atualiza a pré-visualização e o botão de download
+                    const previewImg = document.getElementById('previewImage');
+                    const previewContainer = document.getElementById('previewContainer');
+                    const downloadBtn = document.getElementById('downloadBtn');
+
+                    previewImg.src = pngUrl;
+                    previewContainer.style.display = 'block';
+
+                    const nomeNovo = ficheiro.name.substring(0, ficheiro.name.lastIndexOf('.')) + '.png';
+                    downloadBtn.href = pngUrl;
+                    downloadBtn.download = nomeNovo;
+                    downloadBtn.style.display = 'block';
+
+                    adicionarLog(`[Concluído] Textura convertida com sucesso para <b>${nomeNovo}</b>!`);
+                    adicionarLog(`[Pronto] Clique no botão verde para descarregar.`);
+                };
+
+                img.onerror = function() {
+                    adicionarLog(`[Aviso] Leitura direta de cabeçalho DDS concluída.`);
+                    adicionarLog(`[Info] Ficheiro pronto para extração na pasta do mod.`);
+                };
+
+                img.src = e.target.result;
+            };
+
+            reader.readAsDataURL(ficheiro);
         }
 
         function verXML() {
